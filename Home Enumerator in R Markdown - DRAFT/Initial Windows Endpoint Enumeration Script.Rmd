@@ -1,0 +1,192 @@
+---
+title: "Initial Endpoint Assessment with R Markdown & Python"
+runtime: shiny
+output: 
+  html_document:
+    code_folding: show
+    theme:
+      color-contrast-warnings: false
+      bg: "#202123"
+      fg: "#B8BCC2"
+      primary: "#EA80FC"
+      secondary: "#00DAC6"
+      base_font:
+        google: Prompt
+      heading_font:
+        google: Proza Libre
+---
+
+```{r setup, include=FALSE}
+library(reticulate)
+bslib::bs_themer()
+if (requireNamespace("thematic")) 
+  thematic::thematic_rmd(font = "auto")
+
+```
+
+## On-Prem Storage Analyzer
+
+The following code chunk focuses on importing and executing a separate python script that provides a bar graph to visualize the storage usage on all mapped storage drives on the host machine it's executed on.
+
+
+```{python, Storage-Analyzer}
+import matplotlib.pyplot as plt
+import numpy
+import psutil
+
+# The following function searches for available mounted drives and obtains their usage information and stores the data in a dictionary. Finally, the details are then printed.
+
+def disk_use():
+    parts = psutil.disk_partitions(all=True)
+    storage_dict = {}
+
+    for partition in parts:
+        try:
+            usage = psutil.disk_usage(partition.mountpoint)
+            storage_dict[partition.mountpoint] = {
+                'Total': usage.total,
+                'Used': usage.used,
+                'Free': usage.free,
+                'Percentage': usage.percent
+                }
+        except Exception as ex:
+            print(f"Error retrieving disk usage for {partition.mountpoint} {ex}")
+        
+    return storage_dict
+    
+storage_dict = disk_use()
+for mountpoint, info in storage_dict.items():
+        print(f"Mountpoint: {mountpoint}")
+        print(f"Percentage: {info['Percentage']}%")
+        print("-" * 50)
+
+# The following next function utilizes the previously defined dictionary now populated with data to usage with a bar craph to easily visualize these percentages of utilization across all mounted drives on the machine.
+
+def graph(storage_dict):
+     mountpoints = list(storage_dict.keys())
+     Percentages = [info['Percentage'] for info in storage_dict.values()]
+
+     plt.style.use('ggplot')
+     x = numpy.arange(len(mountpoints))
+     y = Percentages  
+
+     fig, ax = plt.subplots()
+
+     ax.bar(x, y, width=1, edgecolor="grey", linewidth=0.7)
+     ax.set_xticks(x)
+     ax.set_xticklabels(mountpoints, rotation=0, ha='right')
+
+    # Set y-axis labels and ticks
+     ax.set_yticks(numpy.arange(0, max(Percentages) + 1, 10))
+
+     ax.set_ylabel('Percentage (%)')
+     ax.set_title('Disk Usage Percentage')
+
+     plt.tight_layout()
+     plt.show()
+
+graph(storage_dict)
+```
+
+## Network interfaces:
+
+This next section is designed to provide a simple output on the network interfaces detected on the host machine.
+
+
+```{r, net-interfaces}
+library(processx)
+library(knitr)
+
+net_interfaces <- processx::run("ipconfig")
+# Split the output into lines
+output_lines <- strsplit(net_interfaces$stdout, "\n")[[1]]
+
+# Print each line
+for (line in output_lines) {
+  print(line)
+}
+
+```
+
+
+## Local User Enumeration:
+
+This next section provide some basic enumeration on the host machine and provides the raw output of all local and domain information on the machine.:
+
+```{r, local-user-information}
+
+library(processx)
+library(knitr)
+
+local_user_enum <- processx::run("whoami", args = "/all") 
+
+# Split the output into lines
+output_lines <- strsplit(local_user_enum$stdout, "\n")[[1]]
+
+# Print each line
+for (line in output_lines) {
+  print(line)
+}
+
+```
+
+## Further AD Involvement:
+
+This next code chunk focuses primarily on enumerating the machine for domain user access.
+
+##### Note: This code chunk is disabled by default. Uncomment each line to enable this code chunk and rerun it to execute the script.
+
+```{r, ad-information}
+
+#dom_user_enum <- system2("net", args = c("user", "/domain"))
+
+# Split the output into lines
+#output_lines <- strsplit(dom_user_enum$stdout, "\n")[[1]]
+
+# Print each line
+# for (line in output_lines) {
+#  print(line)
+#}
+
+```
+
+
+## System Information
+
+Next, the following code chunk focuses on displaying the output of systeminfo to see the current current system details at a glance.
+
+```{r, sysinfo}
+
+sys_info <- processx::run("systeminfo")
+
+# Split the output into lines
+output_lines <- strsplit(sys_info$stdout, "\n" [[1]])
+
+# print each line
+for (line in output_lines) {
+  print(line)
+}
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,119 @@
+---
+title: "**High-Level Risk Analysis Dashboard**"
+output:
+  flexdashboard::flex_dashboard:
+    orientation: rows
+    theme:
+      version: 4
+      bootswatch: minty
+  html_document:
+    df_print: paged
+---
+
+```{r setup, include=FALSE}
+
+# The following code chunk consists of the loading of all needed libraries for this document. This is often referred to as the "set up chunk". Additionally, this document will default to the file structure shown at the bottom of based on the location of a project file.
+
+# Libraries and setup
+knitr::opts_chunk$set(echo = FALSE)
+library(flexdashboard)
+library(DT)
+library(readxl)
+library(knitr)
+library(ggplot2)
+library(dplyr)
+library(ggpubr)
+
+data <- 'Risk Register Test Dataset.xlsx'
+
+```
+
+```{r, Risk_Register_Import, echo=FALSE}
+# The following code chunk is designed to import the Risk Register dataset.
+
+risk_reg <- read_excel(data)
+```
+
+
+
+ {data-width=360}
+-----------------------------------------------------------------------
+
+### Table Showing Identified Risks with Annual Loss Expectancy Values
+
+```{r, Risk_Register, echo = FALSE}
+
+options(scipen = 999)
+
+datatable(risk_reg)
+```
+
+
+
+{data-width=640, .tabset .tabset-fade}
+-----------------------------------------------------------------------
+
+### Bart Chart Showing The Top 10 Most Costly Risks
+
+```{r, Risk_Analysis, echo = FALSE}
+# The following code chunk focuses on using the previously defined "Total_Ann_Cost" variable from the previous "risk_calculation" code chunk with the imported dataset. 
+# This is then assigned to a dataframe to convert the information into a tabular format that can then be displayed in a two-dimensional graph/plot:
+
+options(scipen = 999)
+
+annual_rate_occurrence <- risk_reg$ARO
+single_loss_expectancy <- risk_reg$SLE
+annual_loss_expectancy <- single_loss_expectancy * annual_rate_occurrence
+
+risk_reg <- risk_reg %>%
+  mutate(`Risk Score` = factor(`Risk Score`, levels = c("Low", "Medium", "High")))
+
+critical_risk <- risk_reg %>%
+  arrange(desc(annual_loss_expectancy)) %>%
+  head(10)
+
+# Create a long-format data frame
+df <- data.frame(
+  Risk_Description = critical_risk$`Risk Description`,
+  Total_Ann_Cost = as.numeric(annual_loss_expectancy[1:10])
+)
+df$Risk_Description <- as.character(seq_len(nrow(df)))  # Replace "Risk_Description" with row numbers
+
+# Create a bar graph using ggbarplot
+risk_bar_graph <- ggbarplot(df, x = "Risk_Description", y = "Total_Ann_Cost", color = "black", fill = "orange", gtheme = theme_gray(), title = "Top 10 Risks By Cost", xlab = "Top Risks", ylab = "Total Annual Cost in Dollars")
+
+# Display the bar graph
+print(risk_bar_graph + theme_bw())
+
+```
+
+
+
+-----------------------------------------------------------------------
+
+### Risk Mitigation Roadmap
+
+```{r, Jira_Tickets}
+data <- 'Risk Register Test Dataset.xlsx'
+sheet2 <- "Relevant Jira Tickets"
+library(DT)
+library(readxl)
+jira_tix <- read_excel(data, sheet2)
+datatable(jira_tix)
+
+```
+
+
+
+-----------------------------------------------------------------------
+
+### Responsible Team Leads
+
+```{r}
+data <- 'Risk Register Test Dataset.xlsx'
+sheet3 <- "Responsible Team Leads"
+library(DT)
+library(readxl)
+jira_tix <- read_excel(data, sheet3)
+datatable(jira_tix)
+```

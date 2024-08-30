@@ -1,0 +1,158 @@
+---
+title: "Linear regression Model for Coffee Sales at Vending Machines in 2024"
+author: "Christopher Kent Leal"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: vignette
+---
+
+```{r load-packages, include = FALSE}
+# Load all your packages that you need later
+library(knitr)
+library(reticulate)
+library(here)
+
+# Placeholder for dataset URL or file path
+# Replace the following with the actual dataset URL or local file path
+
+# Example of using a direct URL
+# coffee_data = "https://www.kaggle.com/datasets/ihelon/coffee-sales"
+
+# Example of using a local file path
+# coffee_data = "data/coffee_sales.csv"
+
+```
+
+# Introduction
+
+This project leverages the `Coffee_Vendor_Machine_Sales` to build a linear regression model to predict the cost of the average of coffee drinks available for the second half of 2024 using data accumulated for the first half of the year. This regression model is focuses in Python and will be automatically executed and shown below.
+
+## Understanding The Dataset:
+
+In order to get to building a linear regression model, we first need to better understand the dataset itself and figure out a way to leverage the data to accomplish a goal by choosing the variables that are essential to perform the calculation. In this instance, I decided to leverage the `Coffee_Vendor_Machine_Sales` dataset in order to calculate the amount of money spent over time for coffee drinks from vending machines. A simple way to understand the data it to simply show in in various ways using modules like `head()`, `tail()`, `summary()`, `describe()`, etc. Here, I use the first in order to show 9 rows of data from the dataset.:
+
+```{r, echo=TRUE}
+# Import dataset from the data/ folder
+coffee_data = "REPLACE_THIS_WITH_ACTUAL_URL_OR_LOCAL_PATH/file.csv"
+head_data <- head(coffee_data, 9)
+print(head_data)
+```
+
+# Interactive figures with plotly
+
+The following code block shows what the dataset looks like by default when assigning both variables `money` and `date` to `X` and `Y` respectively and assigning color values based on the `coffee_name` categorical data from the dataset as well.:
+
+```{r plotly1, eval=ifelse(nzchar(system.file(package = "plotly")), TRUE, FALSE), fig.cap="Interactive htmlwidget 'plotly' to show the raw dataset", fig.width=8}
+# If plotly is installed run:
+p <- plotly::plot_ly(data = coffee_data, x = ~money, y = ~date, color = ~coffee_name)
+plotly::add_markers(p)
+```
+
+
+|
+|
+
+
+# The Linear Regression ML model:
+
+## Predicting Coffee Prices:
+
+After spending time conducting data exploration, if the data is already formatted/cleansed, then we can get right to the meat and potatoes of the objective and begin to construct the regression model itself. The following code chunk imports and executes the regression model designed for the `Coffee_Vendor_Machine_Sales` dataset to visualize the output in this neatly organized R Markdown document.
+
+*Note: This document is not a step-by-step tutorial, but is rather a quick example to showcase how you can create a beautiful R Markdown document while also combining Python, R and executing an ML linear regression model while also allowing for transparency for others to replicate and leverage it.*
+
+```{python, coffee-chunk, echo=TRUE, eval=TRUE}
+from sklearn import linear_model
+import matplotlib.pyplot as plt
+import pandas as pd
+import pylab as pl
+import numpy as np
+import datetime as dt
+import matplotlib.dates as mdates
+
+coffee_data = "REPLACE_THIS_WITH_ACTUAL_URL_OR_LOCAL_PATH/file.csv"
+df = pd.read_csv(coffee_data)
+
+df['date'] = pd.to_datetime(df['date'], errors='coerce')  # Ensure 'date' is in datetime format
+df['date_ordinal'] = df['date'].map(dt.datetime.toordinal)  # Drop any rows where 'date' conversion failed
+
+# Drop rows with NaT in 'date'
+df = df.dropna(subset=['date_ordinal'])
+
+# Prepare the feature and target variables
+X = df[['date_ordinal']]  # Feature variable as 2D array
+y = df['money']  # Target variable
+
+def regression_model():
+    # Split the data into training and testing sets
+    msk = np.random.rand(len(df)) < 0.8
+
+    X_train = X[msk]
+    X_test = X[~msk]
+    y_train = y[msk]
+    y_test = y[~msk]
+
+    colors = {'Latte':'orange', 'Hot Chocolate':'brown', 'Americano': 'grey', 'Americano with Milk':'yellow', 'Cocoa':'purple', 'Cortado':'blue', 'Espresso':'black', 'Cappuccino':'pink'}
+    df['color'] = df['coffee_name'].map(colors)
+
+      # Apply colors to training data only for the scatter plot
+    X_train_color = df.loc[msk, 'color']
+    coffee_names = df['coffee_name'].unique()  # Get unique coffee names
+
+
+    regr = linear_model.LinearRegression()
+    regr.fit(X_train, y_train)
+
+    # Print the coefficients:
+    print('coefficients: ', regr.coef_)
+    print('intercept: ', regr.intercept_)
+
+        # Convert ordinal dates back to datetime for plotting
+    X_train_dates = [dt.datetime.fromordinal(int(d)) for d in X_train['date_ordinal']]
+    X_test_dates = [dt.datetime.fromordinal(int(d)) for d in X_test['date_ordinal']]
+
+    plt.bar(X_train_dates, y_train, color=X_train_color, label='Training data')
+    plt.plot(X_test_dates, regr.predict(X_test), color='red', linewidth=2, label='Regression Line')
+
+    # Extend the date range for future predictions
+    future_dates = pd.date_range(start=df['date'].max(), periods=180).to_pydatetime().tolist()
+    future_ordinal_dates = [d.toordinal() for d in future_dates]
+    future_predictions = regr.predict(pd.DataFrame(future_ordinal_dates, columns=['date_ordinal']))
+
+    # Plot future predictions
+    plt.plot(future_dates, future_predictions, color='blue', linestyle='--', label='Future Predictions')
+
+    plt.xlabel("Dates")
+    plt.ylabel("Money Spent")
+    plt.title("Coffee Vending Machine Sales")
+
+    for coffee, color in colors.items():
+        plt.scatter([], [], color=color, label=coffee)
+
+    plt.legend()
+
+        # Format the x-axis to show dates
+    plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
+    plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
+    plt.gcf().autofmt_xdate()  # Rotate date labels to fit
+    
+            # Adjust layout
+    plt.tight_layout()
+
+    plt.show()
+
+    prediction = regr.predict(X_test)
+    print("Mean absolute error: %.2f" % np.mean(np.absolute(prediction - y_test)))
+
+regression_model()
+
+```
+
+
+# Conclusion:
+
+As shown above, the trend that the linear regression model shows us, is that the average cost will begin to lower slightly over time. This is shown using the dotted line which shows the predicted values for the second half of 2024. The red line shows the current average of the cost of coffee drinks paid for during the first half of 2024 based on the raw dataset values. This is called the regression line. Finally, the training data is marked in a thicker green line. This data is used to train the regression model itself. 
+
+When looking at the coefficients and intercept, we understand that these are the two values that are used to plot our line. Finally, the mean absolute error averages the difference between the predicted values and the actual values. The MAE in this case typically sits at around 3.7 to 4.2. While high, this is as exercise designed to understand the workings of regression models, R markdown and Python programming and how once may go about presenting the data in a neat and organized manner with reproducibility for other to replicate, analyze and improve.

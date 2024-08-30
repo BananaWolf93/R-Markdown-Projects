@@ -1,0 +1,43 @@
+```{r, Pie-Chart}
+
+# The following code chunk is designed to render a 3D pie chart using percentages extracted from a specific column using different values that are NOT numeric. 
+# For example, wanting to figure out what percentage of rows or items have a certain value in the targeted column. Using all values will provide accurate results.
+
+# This first section installs and loads the library needed for this 3D pie chart.
+
+install.packages(plotrix)
+library(plotrix)
+
+# The next section defined and reads the data from the name of the dataset down to the column applicable to this chart template.
+
+dataset <- "ENTER-THE-DATASET-FILE.XLSX"
+sheet_name <-"ENTER-THE-NAME-OF-SHEET-IF-APPLICABLE"
+data <- read_excel(data, sheet_name)
+data_column <- data$"ENTER-COLUMN-NAME"
+
+# The next section rounds the percentage for items that have the specified column values. This example uses 3 different column values.
+
+percentage_val1 <- round(mean(data_column == "ENTER-COLUMN-VALUE1", na.rm = TRUE) * 100, 2)
+percentage_val2 <- round(mean(data_column == "ENTER-COLUMN-VALUE2", na.rm = TRUE) * 100, 2)
+percentage_val3 <- round(mean(data_column == "ENTER-COLUMN-VALUE3", na.rm = TRUE) * 100, 2)
+
+# The next few lines of code focuses on defining appropriate labeling for the pie chart.
+
+percentage_result1 <- paste("ENTER-LABEL", percentage_val1, "%")
+percentage_result2 <- paste("ENTER-LABEL", percentage_val2, "%")
+percentage_result3 <- paste("ENTER-LABEL", percentage_val3, "%")
+
+# The next line of code creates a dedicated matrix for the 3 labels for the pie chart which is then used in the pie3D code at the bottom. These values are adjusted to determine the position of the labels.
+
+label_positions <- matrix(c(1.0, 9.0, 12.1))
+
+# The next section creates a vector using all percentage objects to simplify the usage of them for both their values and labels in the pie chart.
+
+Combined_perc <- c(percentage_val1, percentage_val2, percentage_val3)
+lbls <- c(percentage_result1, percentage_result2, percentage_result3)
+
+# Finally, the pie chart is then created using the two previously defined vectors, assigns colors per value in the vector, and assigns a name for the chart.
+
+pie3D(Combined_perc, labels = lbls, radius = 1.8, shade = 0.2, labelpos = label_positions, explode = 0.3, col = c("green", "orange", "red"), main = "ENTER-THE-NAME-OF-YOUR-CHART")
+
+```

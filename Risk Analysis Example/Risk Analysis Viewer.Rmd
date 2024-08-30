@@ -1,0 +1,98 @@
+---
+title: '**Risks Analysis**'
+output:
+  prettydoc::html_pretty: default
+  pdf_document: default
+  word_document: default
+  html_document:
+    theme: readable
+    df_print: paged
+date: "2024-01-17"
+---
+
+```{r setup, include=FALSE}
+
+# The following code chunk consists of the loading of all needed libraries for this document. This is often referred to as the "set up chunk". Additionally, this document will default to the file structure shown at the bottom of based on the location of a project file.
+
+knitr::opts_chunk$set(echo = TRUE)
+library(here)
+library(readxl)
+library(knitr)
+library(ggplot2)
+library(ggpubr)
+
+```
+
+
+
+
+
+
+
+
+
+
+# Risk Analysis Overview:
+
+### Purpose:
+
+This document is designed to automate the data importation, cleaning and visualization of the organization's Risk Register to provide an automated way to view collected and updated information from a targeted dataset. The primary objective is to provide a dynamic and automated living document that can provide a risk dashboard in real-time to stakeholders at a moments notice. Additionally, this document contains built-in R code to perform calculations for each and every risk in the dataset and determine the annual cost for each risk and compare them to the approximate cost of the implementation of the risk reduction or mitigation controls needed for each one. Lastly, another benefit to this document is that, as an important tool for Data Science, it also allows for complete transparency and reproducibility as the R code and all functions and calculations can be shown if needed for further analysis and editing over time.
+
+
+<br><br><br>
+
+
+```{r, Risk_Register}
+# The following code chunk is designed to import the Risk Register dataset.
+
+data_from <- "Test Risk Register Dataset"
+file_name <- "Risk Register Test Dataset.xlsx"
+file_path <- here(data_folder, data_from, file_name)
+
+risk_reg <- read_excel(file_path)
+knitr::kable(risk_reg)
+```
+
+<br><br><br>
+
+```{r risk_calculation, echo=FALSE}
+
+# The (scipen) option is used to exclude the result from being in scientific notation. The rest of the code chunk has the primary objective of calculating the Annual Loss Expectancy (ALE).
+
+options(scipen = 999)
+
+annual_rate_occurrence <- risk_reg$ARO
+single_loss_expectancy <- risk_reg$SLE
+annual_loss_expectancy <- single_loss_expectancy * annual_rate_occurrence 
+
+# Executing the equation to obtain the result for the annual loss expectancy.
+Total_Ann_Cost <- paste("The annual loss expectancy for: ", risk_reg$`Risk Description`, "is approximately: ", annual_loss_expectancy, "dollars.")
+
+Total_Ann_Cost
+```
+
+<br><br><br>
+
+# Visualizing the Data:
+
+The following bar plot allows us to visualize the total annual cost of each risk. We can also see the description for each risk in the graph as well.:
+
+```{r, Risk_Analysis, echo=TRUE}
+
+# The following code chunk focuses on using the previously defined "Total_Ann_Cost" variable from the previous "risk_calculation" code chunk with the imported dataset. This is then assigned to a dataframe to convert the information into a tabular format that can then be displayed in a two dimensional graph/plot:
+
+df <- data.frame(Total_Ann_Cost = as.numeric(annual_loss_expectancy), Risk_Description = risk_reg$`Risk Description`)
+df$Risk_Description <- as.character(seq_len(nrow(df)))  # Replace "Risk_Description" with row numbers
+
+risk_bar_graph <- ggbarplot(df, x = "Risks", y = "Total_Ann_Cost",color = "black", fill = "turquoise", gtheme = theme_gray(), title = "Risk Analysis", xlab = "Risk Description", ylab = "Total Annual Cost In Dollars")
+risk_bar_graph + theme_bw()
+sessionInfo()
+```
+
+[The following is just a placeholder. This will be replaced with additional analysis. Specifically, involving the inclusion of the cost of Safeguard measures that will be compared to the total annual cost of each risk. In doing so, we can provide an easier way to visualize the comparison for stakeholders to determine risk appetite.]
+
+```{r}
+df <- data.frame(dose=c("D0.5", "D1", "D2"),
+   len=c(4.2, 10, 29.5))
+print(df)
+```

@@ -1,0 +1,34 @@
+---
+title: "README.md"
+author: "Christopher K. Leal"
+date: "2024-02-01"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## G-Drive Dataset Import Function Template:
+
+### Purpose:
+
+The purpose of this template is to quickly and effectively download and/or update a locally stored dataset using G-Drive as the source. When stored in the same path as an R Markdown document, it can then allow the R Markdown document to immediately use it without having to change the document's R code (unless the parameters have changed from within the dataset which would require correction).
+
+## Authentication and Security:
+
+By launching this R script, it will clear out cached credentials locally each time it is run and will require reauthentication by the user. A separate browser tab or window will automatically pop up to request permission from the user prior to downloading the targeted dataset. If the R script is edited to where it "cache = TRUE" or if the line is removed entirely, it will store the cached credentials for reuse by default under the user's **HOME** directory, from where they can be automatically refreshed, as necessary
+
+Additionally, the script leverages the "**_read.only_**" parameter to avoid unintended actions such as writing data to it's source or deleting data from the dataset itself or the G-Drive it can target.
+
+### For Organizational Use:
+
+To further enhance security especially for an organization's use, it is highly recommended to instead opt for the use of an API token from Google's side leveraging a dedicated service account with only the necessary permissions to read the dataset. Using a service account in Google would allow for R scripts to be launched in non-interactive environments without reuiring the user to manually do this. This will allow for the dataset to be found, read and written locally on a periodic basis to reflect the most accurate data in 
+presented R Markdown documentation. This can be accomplished using Windows Task Scheduler, Cron in Unix/Linux or their respective R packages as well.
+
+Once the service account is created, the .JSON key file associated with the account needs to be downloaded and assigned to objects within the R script. Here is an example of this below which you can copy and paste and/or edit to your liking.:
+
+```{r}
+service_account_key <- "path/to/your/service_account_key.json"
+drive_auth(path = service_account_key)
+```

@@ -1,0 +1,15 @@
+---
+author: "Your Name"
+date: "February 2, 2024"
+output:
+  html_document:
+    toc: true  # Include a table of contents (true/false)
+    toc_depth: 3  # Set the depth of the table of contents
+    number_sections: true  # Number sections in the document (true/false)
+    code_download: true  # Enable code download button for code chunks (true/false)
+    code_download_width: "50%"  # Set the width of the code download button
+    code_folding: show  # Enable code folding in code chunks (options: show, hide, none)
+    toc_float:
+      collapsed: true  # Collapse the floating table of contents by default (true/false)
+      smooth_scroll: false  # Enable smooth scroll for the floating table of contents (true/false)
+---

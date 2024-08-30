@@ -1,0 +1,20 @@
+---
+title: "My Customized Document"
+output:
+  flexdashboard::flex_dashboard:
+    theme: cerulean  # Choose a theme (options: default, cerulean, journal, flatly, etc.)
+    highlight: tango  # Choose a syntax highlighting style (options: tango, espresso, zenburn, etc.)
+    source_code: embed  # Choose how source code is displayed (options: embed, hide, show)
+    css: styles.css  # Link to an external CSS file for additional styling
+    self_contained: false  # Generate a standalone HTML file with all dependencies (true/false)
+    code_folding: hide  # Control code folding (options: hide, show, none)
+    navbar:
+      hide: false  # Hide the navigation bar (true/false)
+      position: static  # Set the navbar position (options: static, fixed, top, bottom)
+    fig_caption: true  # Enable or disable figure captions (true/false)
+    mathjax: null  # Specify MathJax options (e.g., {autoNumber: "AMS"})
+    favicon: favicon.ico  # Link to a custom favicon file
+    runtime: shiny  # If you want to include Shiny components in your dashboard
+
+---
+
