@@ -1,0 +1,182 @@
+---
+title: "Support Vector Machine (SVM) With Random Data"
+author: "Christopher Kent Leal"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: vignette
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('reticulate')
+```
+
+## Overview
+
+This is an R Markdown document that is focused on breaking into Support Vector Machines (SVMs) and why they can be extremely useful when datasets are smaller in size and the data requires separation. I will begin by going through an example using a dataset of random data pulled from Kaggle that doesn't require transformation to help facilitate the overall process from a bare-bones persepctive. The process will be broken down into various phases to further illustrate the process and facilitate learning.
+
+## Defining the Objective
+
+In this case, the aforementioned dataset consists of randomly generated data that is, in it's current state, a perfect dataset for this use case. We can, however, assign a use case to this data such as figuring out which students should be categorized as pass or fail based on exam criteria, for instance. This will be the primary objective. I will be leveraging the Support Vector Machine (SVM) classification model to accomplish this and establish that boundary between pass and fail and separate the two groups.
+
+### Phase #1: Loading & Analyzing the dataset
+
+The step is to import the necessary python libraries, load the dataset and analyze the data (data exploration) to take a look at what we need to work with. This can be done with the following code chunk. 
+
+###### Note: The reticulate package will be used to leverage python code.
+
+```{python, Loading & Analyzing Data}
+
+# Loading the necessary libraries:
+
+from sklearn import preprocessing
+from sklearn.model_selection import train_test_split
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+
+# Loading and analyzing the dataset.:
+
+# Placeholder for dataset URL or file path
+# Replace the following with the actual dataset URL or local file path
+
+# Example of using a direct URL
+# test_dataset = "https://www.kaggle.com/datasets/piyushkr101200/nn-assign1-2ddata?resource=download"
+
+# Example of using a local file path
+# test_dataset = "data//data.csv"
+
+file_path = "ENTER\\THE\\PATH\]\FOR\\THE\\DATASET.CSV"
+test_dataset = pd.read_csv(file_path)
+
+test_dataset.head(9)
+test_dataset.tail(9)
+# test_dataset.describe()
+#test_dataset.dtypes
+
+```
+
+### Phase #2: Data Selection and Pre-processing:
+
+once the data is understood and the objective is clear, the next step is to then select the features and target data we want to focus our SVM on. Since Sckit-learn is used for this, the data needs to be in the form of a numpy array to ensure the data can be compatible with the machine learning model.
+
+```{python, Data Selection & Pre-Processing, echo=TRUE}
+# Data selection: Here, we select the features and assign it to X as a numpy array. Next, we assign the target value we want to predict to Y as a numpy array as well. 
+# reticulate::py$test_dataset 
+
+features_df = test_dataset[['0.29166', '0.83188']]
+X = np.array(features_df)
+
+Y = np.array(test_dataset[['1']])
+Y[0:5] # <----------- This last line simply show the first 5 rows of data of the numpy array Y.
+```
+
+
+### Phase #3: Train/Test Split:
+
+Now, the next step is to create the training dataset and the test dataset. The idea here is to separate the dataset so that one part trains the model and the second part allows the model to actually work on new data for testing purposes to have accurate model metric results and determine how well the model performs.
+
+```{python, Train/Test Split}
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size=0.2, random_state=4)
+
+# The ravel() function is needed to convert the 2D numpy array for the Y target arrays into 1D which is required. This is NOT required for the feature arrays so they can remain at 2D.
+Y_train = Y_train.ravel()
+Y_test = Y_test.ravel()
+
+print("Train set: ", X_train.shape, Y_train.shape)
+print("Test set: ", X_test.shape, Y_test.shape)
+
+```
+
+### Phase #4: Creating the SVM Model & Predicting New Data:
+
+Using Sckit-learn, the SVM model can be created by simply importing the necessary package and seting up the model. Here's how this is done for this use case with Sckit-learn. This can then be used to predict new data using the X_test data as shown below. For the sake of simplicity, the results below as limited to the first 5 rows for ease of viewing.:
+
+```{python, Creating the SVM}
+from sklearn import svm
+clf = svm.SVC(kernel='rbf')
+clf.fit(X_train, Y_train)
+
+# Now that the model is fitted, it can be used to predict new values.:
+
+yhat = clf.predict(X_test)
+yhat[0:5]
+
+```
+
+### Phase #5: Evaluating the SVM
+
+There are multiple ways to evaluate the performance of SVMs let alone, machine learning models in general. For this example, the F1 Scoring and the Jaccard Scoring methods are used.The scores shown below indicate that the model's performance and/or accuracy is quite high which is good. SVMs are known to generally have high accuracy, so from this I can see it is a very good result.
+
+* F1-score: This score reflects how well your model balances correctly identifying both categories, which is important when some mistakes are more costly than others (e.g., missing some category A points).
+
+* Jaccard Index: This shows how much overlap there is between your model’s predictions and the actual correct categories, with a high value meaning your model's predictions matched the true results most of the time.
+
+###### Note: The range for these results is from 0 to 1.
+
+```{python, SVM Model Evaluation}
+from sklearn.metrics import jaccard_score
+from sklearn.metrics import f1_score
+
+print(f1_score(Y_test, yhat, average='weighted'))
+print(jaccard_score(Y_test, yhat, pos_label=1))
+
+```
+
+### Phase #6: Visualizing the data
+
+Now that the model is completed and successfully tested and evaluated, it's now time to actually visualize the data in question. We can use the matplotlib python library to accomplish this. We can now visualize how data can be sorted into to classes using characteristics of the target data we decided to focus on. In this example, we can see the students in red who successfully passed their test and the students in blue who failed the test.
+
+```{python, Visualizing the data}
+
+def custom_plot(X, Y, model):
+    h = 0.2
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+
+    # Predict the function value for the whole grid
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    
+    plt.contourf(xx, yy, Z, cmap=plt.cm.coolwarm, alpha=0.8)
+    plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=plt.cm.coolwarm, s=20, edgecolors='k')
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title('SVM Decision Boundary')
+    plt.show()
+
+# Call the plot function
+custom_plot(X_test, Y_test, clf)
+```
+
+## Conlcusion:
+
+As a result of the plot, it is clear that more students have failed and only a handful of students have passed. This model can be used to provide further insight for those who are attempting to evaluate at a high-level and high accuracy what the pass/fail rate is for students given a set of data.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
