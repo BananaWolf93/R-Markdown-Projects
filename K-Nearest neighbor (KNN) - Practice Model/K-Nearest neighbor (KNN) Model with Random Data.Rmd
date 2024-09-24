@@ -1,0 +1,219 @@
+---
+title: "K-Nearest Neighbor (KNN) With Random Data"
+author: "Christopher Kent Leal"
+date: "`r Sys.Date()`"
+output:
+  prettydoc::html_pretty:
+    theme: cayman
+    highlight: vignette
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library('reticulate')
+```
+
+## Overview
+
+This is an R Markdown document that is focused on breaking into K-Nearest Neighbor clasification models (KNNs) and why they can be extremely useful. I will begin by going through an example using a dataset of random data pulled from Kaggle that doesn't require transformation to help facilitate the overall process from a bare-bones persepctive. The process will be broken down into various phases to further illustrate the process and facilitate learning.
+
+## Defining the Objective
+
+In this case, the aforementioned dataset consists of randomly generated data that is, in it's current state, a perfect dataset for this use case as it does not require data cleansing or significant modification. We can, however, assign a use case to this data such as figuring out which patients should be associated with MedA and which ones should be associated with MedB based on characteristics. The point of a KNN model is to define the value of "K" by associating it with a numeric value that would correspond with the number of "neighbors" needed for the model to predict the classification of new unknown data points. As a result, we would then expect the new data point to be added into one of the clusters "neighboring groups" that is would be closest to based on the categorical values.
+
+### Phase #1: Loading & Analyzing the dataset
+
+The step is to import the necessary python libraries, load the dataset and analyze the data (data exploration) to take a look at what we need to work with. This can be done with the following code chunk. 
+
+###### Note: The reticulate package will be used to leverage python code.
+
+```{python, Loading & Analyzing Data}
+
+# Needed libraries for KNN:
+
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+import sklearn.neighbors as knn
+
+# Loading and analyzing the dataset.:
+
+# Placeholder for dataset URL or file path
+# Replace the following with the actual dataset URL or local file path
+
+# Example of using a direct URL
+# test_dataset = "https://www.kaggle.com/datasets/piyushkr101200/nn-assign1-2ddata?resource=download"
+
+# Example of using a local file path
+# test_dataset = "data//test.data"
+
+file_path = "test.data"
+test_dataset = pd.read_csv(file_path)
+
+print(test_dataset.head(9))
+print(test_dataset.describe())
+print(test_dataset.shape)
+# test_dataset.describe()
+# test_dataset.dtypes
+
+```
+
+### Phase #2: Data Selection and Pre-processing:
+
+once the data is understood and the objective is clear, the next step is to then select the features and target data we want to focus our KNN on. Since Sckit-learn is used for this, the data needs to be in the form of a numpy array to ensure the data can be compatible with the machine learning model.
+
+```{python, Data Selection & Pre-Processing, echo=TRUE}
+# Data selection: Here, we select the features and assign it to X as a numpy array. Next, we assign the target value we want to predict to Y as a numpy array as well. 
+# reticulate::py$test_dataset 
+
+file_path = "test.data"
+test_dataset = pd.read_csv(file_path)
+
+features = test_dataset[['0.29166', '0.83188']]
+print(features)
+
+# Converting to a numpy array for sckit-learn
+
+X = features.values
+print(X)
+
+Y = test_dataset[['1']].values
+```
+
+
+### Phase #3: Train/Test Split:
+
+Now, the next step is to create the training dataset and the test dataset. The idea here is to separate the dataset so that one part trains the model and the second part allows the model to actually work on new data for testing purposes to have accurate model metric results and determine how well the model performs.
+
+```{python, Train/Test Split}
+# Test/Train Split Selection:
+
+from sklearn.model_selection import train_test_split
+import numpy as np
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, test_size = 0.2, random_state=4)
+
+# The ravel() function is needed to convert the 2D numpy array for the Y target arrays into 1D which is required. This is NOT required for the feature arrays so they can remain at 2D.
+Y_train = Y_train.ravel()
+Y_test = Y_test.ravel()
+
+print("The test size is: ", X_test.shape, Y_test.shape)
+print("The training size is: ", X_train.shape, Y_train.shape)
+
+```
+
+### Phase #4: Creating the KNN Model & Predicting New Data:
+
+Using Sckit-learn, the KNN model can be created by simply importing the necessary package and seting up the model. Here's how this is done for this use case with Sckit-learn. This can then be used to predict new data using the X_test data as shown below. For the sake of simplicity, the results below as limited to the first 5 rows for ease of viewing.:
+
+```{python, Creating the KNN}
+# Creating the KNN model and fitting it
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import metrics
+
+# The following commented code chunk is a loop that I used to go through 10 values for K to determine the one with the best accuracy resulting in the final uncommented code chunk below where "K = 1".
+
+'''
+K = [1,2,3,4,5,6,7,8,9,10]
+
+for j in K:
+
+    k_neigh = KNeighborsClassifier(n_neighbors = K).fit(X_train, Y_train)
+    Prediction = k_neigh.predict(X_test)
+print(Prediction[0:5])
+print("The training set accuracy is: ", metrics.accuracy_score(Y_train, k_neigh.predict(X_train)))
+print("The testing set accuracy is: ", metrics.accuracy_score(Y_test, Prediction))
+'''
+
+K = 1
+k_neigh = KNeighborsClassifier(n_neighbors = K).fit(X_train, Y_train)
+
+# Model evaluation and prediction with test data
+
+Prediction = k_neigh.predict(X_test)
+print(Prediction[0:5])
+
+```
+
+### Phase #5: Evaluating the KNN
+
+There are multiple ways to evaluate the performance of KNNs let alone, machine learning models in general. For this example, the scores shown below indicate that the model's performance and/or accuracy is quite high which is good.
+
+* Training set accuracy: This score reflects how accurate the model is based on the use of the training set used for training the model
+
+* Testing set accuracy: This shows how accurate the model is when using the test data set. 
+
+* Summary: These two results allow us to compare the accuracy when using data the model was already trained on to newly added data that is unknown to the machine learning model and see the differences between both results.
+
+
+
+###### Note: The range for these results is from 0 to 1.
+
+```{python, KNN Model Evaluation}
+from sklearn import metrics
+
+print("The training set accuracy is: ", metrics.accuracy_score(Y_train, k_neigh.predict(X_train)))
+print("The testing set accuracy is: ", metrics.accuracy_score(Y_test, Prediction))
+
+```
+
+### Phase #6: Visualizing the data
+
+Now that the model is completed and successfully tested and evaluated, it's now time to actually visualize the data in question. We can use the matplotlib python library to accomplish this. We can now visualize how data can be sorted into to classes using characteristics of the target data we decided to focus on. In this example, we can see the students in red who successfully passed their test and the students in blue who failed the test.
+
+```{python, Visualizing the data}
+
+# Plotting the KNN with matplotlib
+def custom_plot(X, Y, model):
+    h = 0.2
+    x_min, x_max = X[:, 0].min() - 1, X[:, 0].max() + 1
+    y_min, y_max = X[:, 1].min() - 1, X[:, 1].max() + 1  # Fix to use X[:, 1] for y limits
+
+    xx, yy = np.meshgrid(np.arange(x_min, x_max, h), np.arange(y_min, y_max, h))
+
+    # Predict the function value for the whole grid
+    Z = model.predict(np.c_[xx.ravel(), yy.ravel()])
+    Z = Z.reshape(xx.shape)
+    
+    # Plot the decision boundary
+    plt.contourf(xx, yy, Z, cmap=plt.cm.coolwarm, alpha=0.8)
+    
+    # Plot the data points
+    plt.scatter(X[:, 0], X[:, 1], c=Y, cmap=plt.cm.coolwarm, s=20, edgecolor='k')
+    plt.xlim(xx.min(), xx.max())
+    plt.ylim(yy.min(), yy.max())
+    plt.title('KNN Decision Boundary')
+    plt.show()
+
+# Call the plot function
+custom_plot(X_test, Y_test, k_neigh)
+```
+
+## Conlcusion:
+
+As a result of the plot, we can see the data points representing the test dataset. We can see the decision boundary for this KNN model and the two classes of data (0 and 1) which we used as our target or dependant variable in this instance. Going back to the aforementioned scenario, we would see in this plot the two patient classes. In the real world, we can identify which patient (data point) corresponds to MedA and which ones correspond to MedB based on the features (characteristics) of the patient data in the dataset.
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
