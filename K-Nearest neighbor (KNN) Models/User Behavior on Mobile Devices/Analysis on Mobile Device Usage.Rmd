@@ -1,0 +1,250 @@
+---
+title: "User Behavior Analysis on Mobile Devices "
+author: "Christopher Kent Leal"
+date: "`r Sys.Date()`"
+output:
+  html_document:
+    theme: journal
+    highlight: breezedark
+code_folding: true
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(reticulate)
+library(readr)
+library(DT)
+```
+
+## Overview
+
+#### This is an R Markdown document that is focused on the analysis of user behavior on mobile devices. This dataset contained approximately 700 rows and about 9 columns or so. The focus for this project will be to design a K-Nearest-Neighbor (KNN) classification model that will cluster the datapoints (users) based on the behavior category within the dataset and plot it out.
+
+### Initial Data Exploration:
+
+#### I will begin by performing data exploration leveraging R's capabilities with some neat packages.
+
+### Using the DT package to visualize quickly, the dataset:
+
+```{r, include=TRUE, Inspecting_Data}
+
+dataset_path <- "../user_behavior_dataset.csv"
+mob_dev_data <- read.csv(dataset_path)
+
+datatable(mob_dev_data)
+```
+
+
+## Leveraging Python to Complete the project:
+
+
+#### The following python code generates a pairplot with seaborn which provides a nice visualization based on the different categories in the dataset. This is color-coded based on the device model as well.:
+
+
+
+```{python, include=TRUE, pairplot}
+
+# Importing the necessary libraries:
+
+import pandas as pd
+import matplotlib.pyplot as plt
+import numpy as np
+from sklearn.preprocessing import StandardScaler
+from sklearn.model_selection import train_test_split
+import seaborn as sns
+from sklearn.preprocessing import LabelEncoder, MinMaxScaler
+from sklearn.metrics import confusion_matrix, classification_report
+from mlxtend.plotting import plot_decision_regions
+
+
+df = pd.read_csv("../user_behavior_dataset.csv")
+# df.isnull().sum() # There doesn't seem to be any null values in the dataset.
+# df.isna().sum() # There doesn't seen to be any presence of na values in the dataset.
+# df.head()
+
+# df['Device Model'].nunique() #finding out the number of smartphone models:
+phone_models = {'Google Pixel 5': 'tab:orange',
+                'OnePlus 9': 'tab:green',
+                'Xiaomi Mi 11': 'tab:blue',
+                'iPhone 12': 'tab:red',
+                'Samsung Galaxy S21': 'tab:purple'}
+                
+sns.pairplot(df, hue='Device Model', palette=phone_models, height=3)
+plt.close() # I had to explicitly include this to prevent RMD from generating the same plot twice.
+
+```
+
+
+#### I continue to experiment with different ways to visualize the data from different perspectives as well to help me determine what kind of story I want to tell and how. In this next code chunk, I create a scatterplot with seaborn that focuses on age. This can of course be changed to visualize different categories as well if needed. You'll want to make sure to download the raw python code from my other repository so you can edit this to your liking.
+
+```{python, scatterplot}
+
+categories = {'Age': 'tab:orange',
+                'Device Model': 'tab:green',
+                'Screen On Time (hours/day)': 'tab:blue',
+                'User ID': 'tab:purple',
+                'User Behavior Class': 'tab:red',
+                'App Usage Time (min/day)': 'brown',
+                'Data Usage (MB/day)': 'black',
+                'Battery Drain (mAh/day)': 'blue',
+                'Number of Apps Installed': 'tab:grey'}
+plt.figure(figsize=[12,10])
+sns.scatterplot(df[['User Behavior Class']], palette=categories, legend="auto")
+
+```
+
+#### I also wanted to see what the differences between some of the categories were visually, so I created a simple bar graph to be able to visualize them. I excluded a couple I didn't want to see in this case.:
+
+```{python, bar-graph}
+
+bar_data = df.drop(columns=['Battery Drain (mAh/day)', 'Data Usage (MB/day)', 'User ID'], axis=1)
+plt.figure(figsize=[18,8],edgecolor='black')
+sns.barplot(bar_data)
+
+```
+
+
+
+## Deciding on KNN:
+
+### Selecting my feature set and my target variables:
+
+#### At this point, I decided to create a KNN classification model to visulize the different behavior classes and test the accuracy on an unseen portion of the data.
+
+```{python, features-target-variables}
+
+X_features = df.drop(columns=['Device Model', 'Operating System', 'User ID', 'User Behavior Class'])
+# X_features.head() Double check to make sure the data is properly formatted and that not Y information exists to prevent data leakage.
+X = pd.get_dummies(X_features)
+
+Y = df['User Behavior Class']
+
+```
+
+
+#### Now that I've selected and hot-encoded categorical labels (non-numeric) as well as selecting my target variable ('User Behavior Class'), I'm now ready to split the data into training and testing sets.:
+
+```{python, test-train-split}
+
+X_train, X_test, Y_train, Y_test = train_test_split(X, Y, random_state=42, test_size=0.3, stratify=Y)
+
+print("The shape of both X and Y are: ", X_train.shape, Y_train.shape)
+
+```
+
+
+
+#### With the test/train splitting process complete, I know have the sets I need to create a KNN classification model for. However, with KNN, the objective is to find a good value for "K", which determines the quanitity of neighboring datapoints for the classifier to make a determination. I can easily do this by creating a simple function to iterate through the training/predicting process and then plotting the accuracy against Y_test to see which one yields the best results.
+
+```{python, KNN-loop}
+
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn import metrics
+
+def KNN_loop():
+    error_rate = []
+    for k in range(1, 100):
+        model = KNeighborsClassifier(n_neighbors=k).fit(X_train, Y_train)
+        prediction = model.predict(X_test)
+        #print(prediction[0:5])
+        #print("The testing set accuracy is: ", metrics.accuracy_score(Y_test, prediction))
+        error_rate.append(np.mean(prediction != Y_test))  # Calculate error rate and append to list
+    return error_rate  # Return error_rate so you can plot or analyze it later
+
+error_rate = KNN_loop()
+
+```
+
+
+
+#### With the function in place to iterate through 100 values, I can now create a plot to visualize this.:
+
+```{python, plotting-K-values}
+
+plt.figure(figsize=[8,6])
+plt.plot(range(1,100), error_rate, linestyle='--', marker='o', color='tab:red')
+plt.grid()
+plt.xlabel("K Value")
+plt.ylabel("Error Rate")
+plt.title("K Value Evaluation")
+plt.legend()
+plt.show()
+
+```
+
+
+#### With the plot out of the way, I've selected a value for K which in this instance is '3'. I can now redo the above model and perform a classification report in addition to a cross validation method to assess the performance and accuracy of the model using the selected value for 'K'.:
+
+```{python, KNN-model}
+
+from sklearn.model_selection import cross_val_score
+
+model = KNeighborsClassifier(n_neighbors=3).fit(X_train, Y_train)
+prediction = model.predict(X_test)
+metrics_report = metrics.classification_report(Y_test, prediction)
+print(metrics_report)
+
+scores = cross_val_score(model, X_train, Y_train, cv=5, scoring='accuracy')
+print("Cross-validation scores:", scores)
+
+```
+
+
+
+##### It is worth noting, that the results of the K value plot above are unrealistic when working with a huge dataset. Having so many values shown at a '0.000' % error rate in a more realistic scenario could indicate overfitting potentially caused by data leakage or the dataset being too clean and small to really leverage these capabilities. However, the use case here while primarily for demonstration purposes, is a great way to demonstrate the usefulness of such ML models with scikit-learn. As shown in the classification and cross-validation report, once again, we can see perfect scores which should be scrutinized in a real-world scenario to be certain of such high accuracy. Another way to do this is to visualize the number of true positives, true negatives, false positives and false negatives in the form of a confusion matrix as shown below.:
+
+```{python, confusion-matrix}
+
+confusion_mat = metrics.confusion_matrix(Y_test, prediction)
+
+plt.figure(figsize=[7,5])
+sns.heatmap(confusion_mat, annot=True)
+plt.xlabel("Predicted Values")
+plt.ylabel("Actual Values")
+plt.show()
+
+```
+
+
+
+#### With the evaluation process complete for the model, we can finally visualize our KNN output. For this project, I chose to leverage a new python library I found that really simplifies the plotting of various ML models called "mlxtend".:
+
+```{python, KNN-visualization}
+
+# Here, I needed to convert the X features to a numpy array:
+X = df[['App Usage Time (min/day)', 'Screen On Time (hours/day)']].apply(pd.to_numeric, errors='coerce').dropna().to_numpy()
+
+# Encode the target variable if it's not numeric
+le = LabelEncoder()
+Y = le.fit_transform(Y)
+
+# Fit the KNN model
+knn = KNeighborsClassifier(n_neighbors=3)
+knn.fit(X, Y)
+
+# Plot decision regions using the unscaled (original) data
+plt.figure(figsize=(10, 6))
+plot_decision_regions(X, Y, clf=knn, legend=2)
+plt.xlabel('App Usage Time (min/day)')  # Ensure this reflects the correct label
+plt.ylabel('Screen On Time (hours/day)')
+plt.title('Decision Regions for User Behavior Classification')
+plt.legend(loc='upper left', title='Behavior Class')
+plt.show()
+
+```
+
+
+
+## Conclusion:
+
+#### With the KNN classifier visualized, we can see how the data points are all classified based on the "User Behavior Class". The idea of this, is to leverage machine learning (KNN) to determine the best value for 'K' which determines the number of neighboring datapoints to the new unknown data. With '3' being the value of 'K', in this case, if out of the 3 neighboring (closest) data points, the majority belong to a certain class, than it is assumed that the unknown data point should be considered of the majority class as a result. It is a way to predict whether data points belong to one class or another based on the euclidian distance.
+
+
+
+
+
+
+
+
+
+
